@@ -1,0 +1,120 @@
+{
+  "appgroup_id": "69caca8559d24681b501b25f",
+  "appgroup_name": "Einkaufslisten-Verwaltung",
+  "apps": {
+    "einkaufsliste": {
+      "app_id": "69caca76b0f958e053b192af",
+      "name": "Einkaufsliste",
+      "controls": {
+        "listenname": {
+          "identifier": "listenname",
+          "label": "Name der Einkaufsliste",
+          "type": "string",
+          "subtype": "text",
+          "fulltype": "string/text",
+          "description": "A string value not longer than 4000 characters (or `null`/`None`).",
+          "required": null,
+          "in_list": true,
+          "in_mobile_list": true,
+          "in_text": true,
+          "in_structured_search": false,
+          "in_fulltext_search": false,
+          "in_expert_search": true
+        },
+        "beschreibung": {
+          "identifier": "beschreibung",
+          "label": "Beschreibung",
+          "type": "string",
+          "subtype": "textarea",
+          "fulltype": "string/textarea",
+          "description": "A string value that can contain multiple lines of text (or `null`/`None`).",
+          "required": null,
+          "in_list": true,
+          "in_mobile_list": true,
+          "in_text": true,
+          "in_structured_search": false,
+          "in_fulltext_search": false,
+          "in_expert_search": true
+        }
+      }
+    },
+    "einkaufseintrag": {
+      "app_id": "69caca7a52f3cb44f17d2e82",
+      "name": "Einkaufseintrag",
+      "controls": {
+        "einkaufsliste_ref": {
+          "identifier": "einkaufsliste_ref",
+          "label": "Einkaufsliste",
+          "type": "applookup",
+          "subtype": "select",
+          "fulltype": "applookup/select",
+          "description": "A reference to a LivingApp record from the target lookup app 'Einkaufsliste' with the id `69caca76b0f958e053b192af` (or `null`/`None`).\n\nThe field value will be a valid record URL in the form `https://my.living-apps.de/rest/apps/69caca76b0f958e053b192af/<record-id>` (or `null`/`None`).\n\nDisplayed as single-select field in HTML pages.",
+          "required": null,
+          "in_list": true,
+          "in_mobile_list": true,
+          "in_text": true,
+          "in_structured_search": false,
+          "in_fulltext_search": false,
+          "in_expert_search": true,
+          "lookup_app": "https://my.living-apps.de/rest/apps/69caca76b0f958e053b192af"
+        },
+        "artikelname": {
+          "identifier": "artikelname",
+          "label": "Artikelname",
+          "type": "string",
+          "subtype": "text",
+          "fulltype": "string/text",
+          "description": "A string value not longer than 4000 characters (or `null`/`None`).",
+          "required": null,
+          "in_list": true,
+          "in_mobile_list": true,
+          "in_text": true,
+          "in_structured_search": false,
+          "in_fulltext_search": false,
+          "in_expert_search": true
+        },
+        "zugeordneter_benutzer": {
+          "identifier": "zugeordneter_benutzer",
+          "label": "Zugeordneter Benutzer",
+          "type": "lookup",
+          "subtype": "select",
+          "fulltype": "lookup/select",
+          "description": "One selected option of multiple available options (or `null`/`None`).\n\nThe available options are defined in the `lookup_data` attribute of this control.\n\nThe field value will be the key in this `lookup_data` attribute (or `null`/`None`).\n\nDisplayed as single-select field in HTML pages.",
+          "required": null,
+          "in_list": true,
+          "in_mobile_list": false,
+          "in_text": false,
+          "in_structured_search": false,
+          "in_fulltext_search": false,
+          "in_expert_search": true,
+          "lookup_data": {
+            "akm": "AKM",
+            "benutzer_2": "Benutzer 2",
+            "benutzer_3": "Benutzer 3"
+          }
+        },
+        "erledigt": {
+          "identifier": "erledigt",
+          "label": "Erledigt",
+          "type": "bool",
+          "subtype": null,
+          "fulltype": "bool",
+          "description": "A boolean value, i.e. `true` or `false` (or `null`/`None`).",
+          "required": null,
+          "in_list": true,
+          "in_mobile_list": false,
+          "in_text": false,
+          "in_structured_search": false,
+          "in_fulltext_search": false,
+          "in_expert_search": true
+        }
+      }
+    }
+  },
+  "metadata": {
+    "apps_list": [
+      "Einkaufsliste",
+      "Einkaufseintrag"
+    ]
+  }
+}

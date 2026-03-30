@@ -1,0 +1,3 @@
+- Einkaufsliste (einkaufsliste): listenname[string/text], beschreibung[string/textarea]
+- Einkaufseintrag (einkaufseintrag): einkaufsliste_ref[applookup/select], artikelname[string/text], zugeordneter_benutzer[lookup/select], erledigt[bool]
+  → einkaufsliste_ref links to app_id 69caca76b0f958e053b192af
