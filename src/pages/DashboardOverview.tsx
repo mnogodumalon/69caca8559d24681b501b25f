@@ -22,10 +22,6 @@ import {
   IconCheck,
   IconListCheck,
   IconShoppingBag,
-  IconRocket,
-  IconChevronRight,
-  IconClipboardList,
-  IconPlayerPlay,
   IconHandStop,
   IconX,
   IconUsers,
@@ -200,42 +196,6 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      {/* Workflows */}
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <IconRocket size={18} className="text-primary" />
-          <h2 className="font-semibold text-sm">Workflows</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <a
-            href="#/intents/liste-befuellen"
-            className="bg-card border border-border border-l-4 border-l-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3 no-underline"
-          >
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <IconClipboardList size={18} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-foreground">Liste befüllen</p>
-              <p className="text-xs text-muted-foreground truncate">Liste auswählen &amp; Artikel schnell hinzufügen</p>
-            </div>
-            <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
-          </a>
-          <a
-            href="#/intents/einkauf-durchfuehren"
-            className="bg-card border border-border border-l-4 border-l-primary rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3 no-underline"
-          >
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <IconPlayerPlay size={18} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-foreground">Einkauf durchführen</p>
-              <p className="text-xs text-muted-foreground truncate">Liste wählen &amp; Artikel Schritt für Schritt abhaken</p>
-            </div>
-            <IconChevronRight size={16} className="text-muted-foreground shrink-0" />
-          </a>
-        </div>
-      </div>
-
       {/* Master-Detail + Persons */}
       <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: '520px' }}>
 
@@ -437,7 +397,7 @@ export default function DashboardOverview() {
                         </p>
                         {item.fields.zugeordneter_benutzer && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {item.fields.zugeordneter_benutzer.label}
+                            {persons.find(p => p.key === item.fields.zugeordneter_benutzer?.key)?.label ?? item.fields.zugeordneter_benutzer.label}
                           </p>
                         )}
                       </div>
