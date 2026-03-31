@@ -441,8 +441,8 @@ export default function DashboardOverview() {
                         )}
                       </div>
 
-                      {/* Hand (assign) or X (clear) */}
-                      {!item.fields.zugeordneter_benutzer ? (
+                      {/* Hand (assign) */}
+                      {!item.fields.zugeordneter_benutzer && (
                         <Popover
                           open={assignPopover === item.record_id}
                           onOpenChange={open => setAssignPopover(open ? item.record_id : null)}
@@ -475,14 +475,6 @@ export default function DashboardOverview() {
                             )}
                           </PopoverContent>
                         </Popover>
-                      ) : (
-                        <button
-                          onClick={() => handleClearPerson(item)}
-                          className="shrink-0 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                          title="Zuweisung aufheben"
-                        >
-                          <IconX size={14} />
-                        </button>
                       )}
 
                       {/* Edit + Delete */}
@@ -502,6 +494,17 @@ export default function DashboardOverview() {
                           <IconTrash size={13} className="text-muted-foreground" />
                         </button>
                       </div>
+
+                      {/* X to clear person — only shown when person is assigned */}
+                      {item.fields.zugeordneter_benutzer && (
+                        <button
+                          onClick={() => handleClearPerson(item)}
+                          className="shrink-0 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Zuweisung aufheben"
+                        >
+                          <IconX size={14} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
