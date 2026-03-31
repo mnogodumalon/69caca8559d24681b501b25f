@@ -163,7 +163,8 @@ export default function DashboardOverview() {
   };
 
   const handleClearPerson = async (item: EnrichedEinkaufseintrag) => {
-    await LivingAppsService.updateEinkaufseintragEntry(item.record_id, { zugeordneter_benutzer: '' });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await LivingAppsService.updateEinkaufseintragEntry(item.record_id, { zugeordneter_benutzer: null as any });
     fetchAll();
   };
 
