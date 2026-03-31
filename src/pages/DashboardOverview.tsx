@@ -78,6 +78,7 @@ export default function DashboardOverview() {
   const [persons, setPersons] = useState<Person[]>(() => loadPersons());
   const [newPersonName, setNewPersonName] = useState('');
   const [addPersonOpen, setAddPersonOpen] = useState(false);
+  const [addPersonPanelOpen, setAddPersonPanelOpen] = useState(false);
   const [editPersonKey, setEditPersonKey] = useState<string>('');
   const [editPersonOpen, setEditPersonOpen] = useState(false);
   const [editPersonName, setEditPersonName] = useState('');
@@ -511,9 +512,43 @@ export default function DashboardOverview() {
 
         {/* Persons Panel */}
         <div className="lg:w-56 shrink-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-            <IconUsers size={16} className="text-muted-foreground shrink-0" />
-            <h2 className="font-semibold text-sm">Personen</h2>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <IconUsers size={16} className="text-muted-foreground shrink-0" />
+              <h2 className="font-semibold text-sm">Personen</h2>
+            </div>
+            <Popover open={addPersonPanelOpen} onOpenChange={setAddPersonPanelOpen}>
+              <PopoverTrigger asChild>
+                <button className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-bold leading-none hover:bg-primary/90 transition-colors shrink-0">
+                  +
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-3" align="end">
+                <p className="text-sm font-semibold mb-2">Neue Person anlegen</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Name eingeben..."
+                    value={newPersonName}
+                    onChange={e => setNewPersonName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        handleAddPerson();
+                        setAddPersonPanelOpen(false);
+                      }
+                    }}
+                    className="text-sm h-8"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    className="h-8 shrink-0"
+                    onClick={() => { handleAddPerson(); setAddPersonPanelOpen(false); }}
+                  >
+                    <IconUserPlus size={14} />
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex-1 overflow-y-auto">
             {sortedPersons.length === 0 ? (
