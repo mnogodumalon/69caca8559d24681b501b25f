@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { enrichEinkaufseintrag } from '@/lib/enrich';
 import type { EnrichedEinkaufseintrag } from '@/types/enriched';
@@ -12,7 +12,7 @@ import { AI_PHOTO_SCAN } from '@/config/ai-features';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
+import { StatCard } from '@/components/StatCard';
 import {
   IconAlertCircle,
   IconPlus,
@@ -24,32 +24,14 @@ import {
   IconShoppingBag,
   IconHandStop,
   IconX,
-  IconUsers,
   IconUserPlus,
+  IconPackage,
 } from '@tabler/icons-react';
 
-type Person = { key: string; label: string; custom?: boolean };
-
-const BASE_PERSONS: Person[] = (LOOKUP_OPTIONS.einkaufseintrag?.zugeordneter_benutzer ?? []).map(p => ({ ...p }));
-const STORAGE_KEY = 'einkauf_persons_v1';
-
-function loadPersons(): Person[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const stored: Person[] = JSON.parse(raw);
-      const storedMap = new Map(stored.map(p => [p.key, p]));
-      const merged: Person[] = BASE_PERSONS.map(bp => storedMap.get(bp.key) ?? bp);
-      const customs = stored.filter(p => p.custom && !BASE_PERSONS.find(b => b.key === p.key));
-      return [...merged, ...customs];
-    }
-  } catch { /* ignore */ }
-  return [...BASE_PERSONS];
-}
-
-function savePersons(persons: Person[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(persons)); } catch { /* ignore */ }
-}
+// Personen direkt aus dem Lookup-Feld des Einkaufseintrags
+const PERSONS = (LOOKUP_OPTIONS.einkaufseintrag?.zugeordneter_benutzer ?? [])
+  .slice()
+  .sort((a, b) => a.label.localeCompare(b.label, 'de'));
 
 export default function DashboardOverview() {
   const {
@@ -71,13 +53,33 @@ export default function DashboardOverview() {
   const [deleteItem, setDeleteItem] = useState<EnrichedEinkaufseintrag | null>(null);
   const [personFilter, setPersonFilter] = useState<string | null>(null);
   const [assignPopover, setAssignPopover] = useState<string | null>(null);
-  const [persons, setPersons] = useState<Person[]>(() => loadPersons());
+
+  const STORAGE_KEY = 'custom_persons_v1';
+  const [customPersons, setCustomPersons] = useState<{ key: string; label: string }[]>(() => {
+    try {
+      const saved: { key: string; label: string }[] = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
+      // Sync persisted custom persons into LOOKUP_OPTIONS so dialogs show the same list
+      const opts = LOOKUP_OPTIONS.einkaufseintrag?.zugeordneter_benutzer;
+      if (opts) {
+        for (const p of saved) {
+          if (!opts.find(o => o.key === p.key)) opts.push(p);
+        }
+      }
+      return saved;
+    } catch { return []; }
+  });
+  const [addingPerson, setAddingPerson] = useState(false);
   const [newPersonName, setNewPersonName] = useState('');
-  const [addPersonOpen, setAddPersonOpen] = useState(false);
-  const [addPersonPanelOpen, setAddPersonPanelOpen] = useState(false);
-  const [editPersonKey, setEditPersonKey] = useState<string>('');
-  const [editPersonOpen, setEditPersonOpen] = useState(false);
-  const [editPersonName, setEditPersonName] = useState('');
+  const addPersonInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (addingPerson) addPersonInputRef.current?.focus();
+  }, [addingPerson]);
+
+  const allPersons = useMemo(
+    () => [...PERSONS, ...customPersons].sort((a, b) => a.label.localeCompare(b.label, 'de')),
+    [customPersons]
+  );
 
   // Sort lists newest first (by createdat descending)
   const sortedLists = useMemo(
@@ -123,14 +125,23 @@ export default function DashboardOverview() {
     return map;
   }, [enrichedEinkaufseintrag]);
 
-  // Persons sorted alphabetically
-  const sortedPersons = useMemo(
-    () => [...persons].sort((a, b) => a.label.localeCompare(b.label, 'de')),
-    [persons]
-  );
-
   if (loading) return <DashboardSkeleton />;
   if (error) return <DashboardError error={error} onRetry={fetchAll} />;
+
+  const handleAddPerson = () => {
+    const name = newPersonName.trim();
+    if (!name) { setAddingPerson(false); return; }
+    const key = `custom_${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
+    const newEntry = { key, label: name };
+    const updated = [...customPersons, newEntry];
+    setCustomPersons(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // Also inject into LOOKUP_OPTIONS so the form dialog shows the same list
+    const opts = LOOKUP_OPTIONS.einkaufseintrag?.zugeordneter_benutzer;
+    if (opts && !opts.find(o => o.key === key)) opts.push(newEntry);
+    setNewPersonName('');
+    setAddingPerson(false);
+  };
 
   const handleToggleDone = async (item: EnrichedEinkaufseintrag) => {
     await LivingAppsService.updateEinkaufseintragEntry(item.record_id, { erledigt: !item.fields.erledigt });
@@ -164,38 +175,36 @@ export default function DashboardOverview() {
     fetchAll();
   };
 
-  const handleAddPerson = () => {
-    const name = newPersonName.trim();
-    if (!name) return;
-    const slug = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    const key = `custom_${slug}_${Date.now()}`;
-    const updated = [...persons, { key, label: name, custom: true }];
-    setPersons(updated);
-    savePersons(updated);
-    setNewPersonName('');
-    setAddPersonOpen(false);
-  };
-
-  const handleEditPersonSave = () => {
-    const name = editPersonName.trim();
-    if (!name) return;
-    const updated = persons.map(p => p.key === editPersonKey ? { ...p, label: name } : p);
-    setPersons(updated);
-    savePersons(updated);
-    setEditPersonOpen(false);
-    setEditPersonKey('');
-  };
-
-  const handleDeletePerson = (key: string) => {
-    const updated = persons.filter(p => p.key !== key);
-    setPersons(updated);
-    savePersons(updated);
-    setEditPersonOpen(false);
-    setEditPersonKey('');
-  };
+  const totalItems = listItems.length;
+  const openItems = listItems.filter(i => !i.fields.erledigt).length;
+  const doneItems = listItems.filter(i => i.fields.erledigt).length;
 
   return (
     <div className="space-y-6">
+      {/* Stats */}
+      {activeList && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            title="Anzahl Artikel"
+            value={String(totalItems)}
+            description="in dieser Liste"
+            icon={<IconPackage size={18} className="text-muted-foreground" />}
+          />
+          <StatCard
+            title="Offen"
+            value={String(openItems)}
+            description="noch zu kaufen"
+            icon={<IconShoppingCart size={18} className="text-muted-foreground" />}
+          />
+          <StatCard
+            title="Erledigt"
+            value={String(doneItems)}
+            description="bereits gekauft"
+            icon={<IconCheck size={18} className="text-muted-foreground" />}
+          />
+        </div>
+      )}
+
       {/* Master-Detail + Persons */}
       <div className="flex flex-col lg:flex-row gap-4" style={{ minHeight: '520px' }}>
 
@@ -319,7 +328,7 @@ export default function DashboardOverview() {
                 >
                   Alle
                 </button>
-                {sortedPersons.map(p => (
+                {allPersons.map(p => (
                   <button
                     key={p.key}
                     onClick={() => setPersonFilter(personFilter === p.key ? null : p.key)}
@@ -332,29 +341,30 @@ export default function DashboardOverview() {
                     {p.label}
                   </button>
                 ))}
-                <Popover open={addPersonOpen} onOpenChange={setAddPersonOpen}>
-                  <PopoverTrigger asChild>
-                    <button className="w-7 h-7 rounded-full bg-muted text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors text-base font-bold leading-none">
-                      +
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-3" align="start">
-                    <p className="text-sm font-semibold mb-2">Neue Person anlegen</p>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Name eingeben..."
-                        value={newPersonName}
-                        onChange={e => setNewPersonName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleAddPerson(); }}
-                        className="text-sm h-8"
-                        autoFocus
-                      />
-                      <Button size="sm" className="h-8 shrink-0" onClick={handleAddPerson}>
-                        <IconUserPlus size={14} />
-                      </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                {addingPerson ? (
+                  <form
+                    onSubmit={e => { e.preventDefault(); handleAddPerson(); }}
+                    className="flex items-center gap-1"
+                  >
+                    <input
+                      ref={addPersonInputRef}
+                      value={newPersonName}
+                      onChange={e => setNewPersonName(e.target.value)}
+                      onBlur={handleAddPerson}
+                      onKeyDown={e => e.key === 'Escape' && (setAddingPerson(false), setNewPersonName(''))}
+                      placeholder="Name…"
+                      className="h-6 px-2 rounded-full text-xs border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary w-24"
+                    />
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setAddingPerson(true)}
+                    className="w-6 h-6 rounded-full bg-muted text-muted-foreground hover:bg-accent flex items-center justify-center transition-colors"
+                    title="Person hinzufügen"
+                  >
+                    <IconUserPlus size={12} />
+                  </button>
+                )}
               </div>
 
               {listItems.length === 0 ? (
@@ -397,7 +407,7 @@ export default function DashboardOverview() {
                         </p>
                         {item.fields.zugeordneter_benutzer && (
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {persons.find(p => p.key === item.fields.zugeordneter_benutzer?.key)?.label ?? item.fields.zugeordneter_benutzer.label}
+                            {item.fields.zugeordneter_benutzer.label}
                           </p>
                         )}
                       </div>
@@ -418,10 +428,10 @@ export default function DashboardOverview() {
                           </PopoverTrigger>
                           <PopoverContent className="w-48 p-2" align="end">
                             <p className="text-xs text-muted-foreground mb-1.5 px-1 font-medium">Person zuweisen:</p>
-                            {sortedPersons.length === 0 ? (
-                              <p className="text-xs text-muted-foreground px-2 py-1">Noch keine Personen angelegt.</p>
+                            {allPersons.length === 0 ? (
+                              <p className="text-xs text-muted-foreground px-2 py-1">Keine Personen verfügbar.</p>
                             ) : (
-                              sortedPersons.map(p => (
+                              allPersons.map(p => (
                                 <button
                                   key={p.key}
                                   onClick={() => handleAssignPerson(item.record_id, p.key)}
@@ -474,106 +484,6 @@ export default function DashboardOverview() {
           )}
         </div>
 
-        {/* Persons Panel */}
-        <div className="lg:w-56 shrink-0 bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2">
-              <IconUsers size={16} className="text-muted-foreground shrink-0" />
-              <h2 className="font-semibold text-sm">Personen</h2>
-            </div>
-            <Popover open={addPersonPanelOpen} onOpenChange={setAddPersonPanelOpen}>
-              <PopoverTrigger asChild>
-                <button className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-base font-bold leading-none hover:bg-primary/90 transition-colors shrink-0">
-                  +
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64 p-3" align="end">
-                <p className="text-sm font-semibold mb-2">Neue Person anlegen</p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Name eingeben..."
-                    value={newPersonName}
-                    onChange={e => setNewPersonName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        handleAddPerson();
-                        setAddPersonPanelOpen(false);
-                      }
-                    }}
-                    className="text-sm h-8"
-                    autoFocus
-                  />
-                  <Button
-                    size="sm"
-                    className="h-8 shrink-0"
-                    onClick={() => { handleAddPerson(); setAddPersonPanelOpen(false); }}
-                  >
-                    <IconUserPlus size={14} />
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {sortedPersons.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
-                <p className="text-xs text-muted-foreground">Noch keine Personen vorhanden.</p>
-              </div>
-            ) : (
-              sortedPersons.map(person => (
-                <Popover
-                  key={person.key}
-                  open={editPersonKey === person.key && editPersonOpen}
-                  onOpenChange={open => {
-                    if (open) {
-                      setEditPersonKey(person.key);
-                      setEditPersonName(person.label);
-                      setEditPersonOpen(true);
-                    } else {
-                      setEditPersonOpen(false);
-                      setEditPersonKey('');
-                    }
-                  }}
-                >
-                  <PopoverTrigger asChild>
-                    <button className="w-full flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-accent transition-colors text-left">
-                      <span className="w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center shrink-0">
-                        {person.label.charAt(0).toUpperCase()}
-                      </span>
-                      <span className="flex-1 min-w-0 text-sm font-medium truncate">{person.label}</span>
-                      <IconPencil size={13} className="text-muted-foreground shrink-0" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-60 p-3" align="end">
-                    <p className="text-sm font-semibold mb-2">Person bearbeiten</p>
-                    <div className="flex gap-2 mb-2">
-                      <Input
-                        value={editPersonName}
-                        onChange={e => setEditPersonName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleEditPersonSave(); }}
-                        className="text-sm h-8"
-                        autoFocus
-                        placeholder="Name..."
-                      />
-                      <Button size="sm" className="h-8 shrink-0" onClick={handleEditPersonSave}>
-                        <IconCheck size={14} />
-                      </Button>
-                    </div>
-                    {person.custom && (
-                      <button
-                        onClick={() => handleDeletePerson(person.key)}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                      >
-                        <IconTrash size={13} />
-                        Person löschen
-                      </button>
-                    )}
-                  </PopoverContent>
-                </Popover>
-              ))
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Dialogs */}
@@ -636,11 +546,9 @@ export default function DashboardOverview() {
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-24 rounded-2xl" />
       <div className="flex flex-col lg:flex-row gap-4">
         <Skeleton className="lg:w-72 h-96 rounded-2xl" />
         <Skeleton className="flex-1 h-96 rounded-2xl" />
-        <Skeleton className="lg:w-56 h-96 rounded-2xl" />
       </div>
     </div>
   );
