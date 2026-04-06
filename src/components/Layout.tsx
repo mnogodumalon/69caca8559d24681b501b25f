@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { IconArrowBackUp, IconFileText, IconLayoutDashboard, IconMenu2, IconSettings } from '@tabler/icons-react';
+import { IconArrowBackUp, IconMenu2, IconSettings } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import ChatWidget from '@/components/ChatWidget';
 import { ActionInputDialog } from '@/components/ActionInputDialog';
@@ -11,16 +11,6 @@ const APP_TITLE = 'Einkaufslisten-Verwaltung';
 
 const IS_EMBED = new URLSearchParams(window.location.search).has('embed') || window.navigator.userAgent.startsWith('LivingAppsMobile');
 
-const navigation = [
-  { name: 'Übersicht', href: '/', icon: IconLayoutDashboard },
-  { name: 'Einkaufsliste', href: '/einkaufsliste', icon: IconFileText },
-  { name: 'Einkaufseintrag', href: '/einkaufseintrag', icon: IconFileText },
-];
-
-const externalNavigation = [
-  { name: 'Einkaufsliste', href: '/gateway/apps/69caca76b0f958e053b192af?template=list_page', icon: IconFileText },
-  { name: 'Einkaufseintrag', href: '/gateway/apps/69caca7a52f3cb44f17d2e82?template=list_page', icon: IconFileText },
-];
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -78,70 +68,10 @@ export function Layout() {
             <IconArrowBackUp size={16} className="shrink-0" />
             <span className="truncate">Zurück</span>
           </a>
-          <p className="px-4 pb-2 pt-2 text-xs font-medium text-muted-foreground">
-            Navigation
-          </p>
-          {/* Overview link */}
-          {navigation.slice(0, 1).map(item => {
-            const Icon = item.icon;
-            return (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              end
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }: { isActive: boolean }) =>
-                `flex items-center gap-2 px-4 py-2 rounded-2xl text-base transition-colors min-w-0 ${
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground font-normal hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                }`
-              }
-            >
-              <Icon size={16} className="shrink-0" />
-              <span className="truncate">{item.name}</span>
-            </NavLink>
-            );
-          })}
-          {/* Entity links (external) */}
-          {externalNavigation.map(item => {
-            const Icon = item.icon;
-            return (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl text-base transition-colors min-w-0 text-sidebar-foreground font-normal hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-            >
-              <Icon size={16} className="shrink-0" />
-              <span className="truncate">{item.name}</span>
-            </a>
-            );
-          })}
-          {/* CRUD page links (hidden via .nav-crud-item { display: none } in index.css) */}
-          {navigation.slice(1).map(item => {
-            const Icon = item.icon;
-            return (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              onClick={() => setSidebarOpen(false)}
-              className={({ isActive }: { isActive: boolean }) =>
-                `nav-crud-item flex items-center gap-2 px-4 py-2 rounded-2xl text-base transition-colors min-w-0 ${
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground font-normal hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                }`
-              }
-            >
-              <Icon size={16} className="shrink-0" />
-              <span className="truncate">{item.name}</span>
-            </NavLink>
-            );
-          })}
         </nav>
 
         <div className="mt-auto px-3 pb-4">
-          <div className="border-t border-sidebar-border pt-3">
+          <div className="border-t border-sidebar-border pt-3 space-y-0.5">
             <NavLink
               to='/admin'
               onClick={() => setSidebarOpen(false)}
@@ -154,8 +84,16 @@ export function Layout() {
               }
             >
               <IconSettings size={16} className="shrink-0" />
-              <span className="truncate">Verwaltung</span>
+              <span className="truncate">Einstellungen</span>
             </NavLink>
+            <a
+              href="https://my.living-apps.de/apps"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs transition-colors text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+            >
+              <span className="truncate">Version 2025.04 — Update prüfen</span>
+            </a>
           </div>
         </div>
         </div>
